@@ -25,6 +25,7 @@ use self::block_stack::BlockStackElement;
 use self::convert_i64::convert_i64_instr;
 use self::duplicate_stack::*;
 use self::hook_map::HookMap;
+use self::pointer_hardening::harden_module;
 use self::static_info::*;
 use self::type_stack::TypeStack;
 
@@ -32,6 +33,7 @@ pub mod block_stack;
 mod convert_i64;
 mod duplicate_stack;
 mod hook_map;
+mod pointer_hardening;
 mod static_info;
 pub mod type_stack;
 
@@ -774,6 +776,10 @@ pub fn add_hooks(
         // finally, switch dummy body out against instrumented body
         function.code_mut().unwrap().body = instrumented_body;
     });
+
+    if enabled_hooks.contains(Hook::PointerHardening) {
+        harden_module(module);
+    }
 
     // actually add the hooks to module and check that inserted Idx is the one on the Hook struct
     let hooks = hooks.finish();

@@ -922,6 +922,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "peekmore"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9461cdf6a5942e7cf4ef7cd5ba8f8a85841ad3931ec5d4b6a556ba6d6e8bad8e"
+
+[[package]]
 name = "percent-encoding"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1405,6 +1411,7 @@ dependencies = [
  "main_error",
  "nohash-hasher",
  "parking_lot",
+ "peekmore",
  "rayon",
  "serde",
  "serde_json",
