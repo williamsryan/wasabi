@@ -78,7 +78,7 @@ fn get_func_ptr_addresses(module: &mut Module) -> Vec<u32> {
                     println!("[Pointer Hardening] Could not find an instruction before a 'call_indirect' instruction in function #{real_func_idx:?} !");
                 }
                 _ => {
-                    println!("[Pointer Hardening] Unknown instruction pattern after a 'call_indirect' instruction in function #{real_func_idx:?} !");
+                    println!("[Pointer Hardening] Unknown instruction pattern before a 'call_indirect' instruction in function #{real_func_idx:?} !");
                 }
             }
         }
@@ -156,40 +156,52 @@ fn encrypt_func_ptrs_in_data_sections(module: &mut Module, func_ptr_addresses: &
         'l_encrypted_func_ptr: for memory in module.memories.iter_mut() {
             for data_section in memory.data.iter_mut() {
                 if let Const(Val::I32(i32)) = data_section.offset[0] {
-                    // Check if the function pointer is in this data section
-                    let func_ptr_size = 4;
-                    let mut data_section_len = data_section.bytes.len();
-                    if data_section_len < func_ptr_size {
-                        continue;
+                    if !data_section.bytes.is_empty() {
+                        // Check if the function pointer is in this data section
+                        let func_ptr_size = 4;
+
+                        /*
+                         * Round up the length of the data section to the next four byte boundary.
+                         * This is done so that we can detect if a function pointer lies at the end of a data section,
+                         * as any trailing null bytes are removed by wasabi.
+                         */
+                        let mut data_section_len = data_section.bytes.len();
+                        let remainder = ((data_section_len + 3) & !3) - data_section_len;
+                        data_section.bytes.append(&mut vec![0; remainder]);
+                        data_section_len += remainder;
+
+                        let data_section_start = i32 as u32;
+                        let data_section_end = (data_section_start + data_section_len as u32) - func_ptr_size as u32;
+                        // Restore the data section to its original length if we are not modifying it
+                        if *func_ptr_addr < data_section_start || *func_ptr_addr > data_section_end {
+                            data_section.bytes.truncate(data_section_len - remainder);
+                            continue;
+                        }
+
+                        // Get the function pointer from the data section
+                        let func_ptr_start: usize = (func_ptr_addr - data_section_start) as usize;
+                        let func_ptr_end = func_ptr_start + func_ptr_size;
+                        let func_ptr = u32::from_le_bytes(
+                            data_section.bytes[func_ptr_start..func_ptr_end]
+                                .try_into()
+                                .unwrap(),
+                        );
+                        // Web Assembly uses little-endian byte ordering
+                        let encrypted_func_ptr = (func_ptr ^ canary).to_le_bytes();
+                        // Store the encrypted function pointer into the data section
+                        data_section.bytes[func_ptr_start..func_ptr_end].copy_from_slice(&encrypted_func_ptr);
+
+                        /*
+                         * Restore the data section to its original length if the function pointer being modified is not
+                         * at the end of the data section.
+                         */
+                        if *func_ptr_addr != data_section_end {
+                            data_section.bytes.truncate(data_section_len - remainder);
+                        }
+
+                        found_func_ptr = true;
+                        break 'l_encrypted_func_ptr;
                     }
-
-                    // Round up the length of the data section to the next four byte boundary
-                    // Mike: This is done so that we can detect if a function pointer lies at the end of a data section
-                    let remainder = ((data_section_len + 3) & !3) - data_section_len;
-                    data_section.bytes.append(&mut vec![0; remainder]);
-                    data_section_len += remainder;
-
-                    let data_section_start = i32 as u32;
-                    let data_section_end = (data_section_start + data_section_len as u32) - func_ptr_size as u32;
-                    if *func_ptr_addr < data_section_start || *func_ptr_addr > data_section_end {
-                        continue;
-                    }
-
-                    // Get the function pointer from the data section
-                    let func_ptr_start: usize = (func_ptr_addr - data_section_start) as usize;
-                    let func_ptr_end = func_ptr_start + func_ptr_size;
-                    let func_ptr = u32::from_le_bytes(
-                        data_section.bytes[func_ptr_start..func_ptr_end]
-                            .try_into()
-                            .unwrap(),
-                    );
-                    // Web Assembly uses little-endian byte ordering
-                    let encrypted_func_ptr = (func_ptr ^ canary).to_le_bytes();
-                    // Store the encrypted function pointer into the data section
-                    data_section.bytes[func_ptr_start..func_ptr_end].copy_from_slice(&encrypted_func_ptr);
-
-                    found_func_ptr = true;
-                    break 'l_encrypted_func_ptr;
                 }
             }
         }
