@@ -47,9 +47,7 @@ fn remove_dup_addresses(func_ptr_addresses: &mut Vec<u32>) {
 fn get_func_ptr_addresses(module: &mut Module) -> Vec<u32> {
     let mut func_ptr_addresses = vec![];
 
-    // NOTE: does this end up now looking at functions 1->n, when it should be 1->(n-1)?
     for (func_idx, func) in module.clone().functions() {
-        let real_func_idx = func_idx.to_usize() + 1;
         let mut func_instrs_rev_iter = func.instrs().iter().rev().peekmore();
 
         'l_next_func: loop {
@@ -78,14 +76,14 @@ fn get_func_ptr_addresses(module: &mut Module) -> Vec<u32> {
                         func_ptr_addresses.push(*i32 as u32 + mem_arg.offset);
                         func_instrs_rev_iter.next();
                     } else {
-                        println!("[Pointer Hardening] Unrecognised 'i32.load' pattern in function #{real_func_idx:?} !");
+                        println!("[Pointer Hardening] Unrecognised 'i32.load' pattern in function #{func_idx:?} !");
                     }
                 }
                 None => {
-                    println!("[Pointer Hardening] Could not find an instruction before a 'call_indirect' instruction in function #{real_func_idx:?} !");
+                    println!("[Pointer Hardening] Could not find an instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
                 }
                 _ => {
-                    println!("[Pointer Hardening] Unknown instruction pattern before a 'call_indirect' instruction in function #{real_func_idx:?} !");
+                    println!("[Pointer Hardening] Unknown instruction pattern before a 'call_indirect' instruction in function #{func_idx:?} !");
                 }
             }
         }
