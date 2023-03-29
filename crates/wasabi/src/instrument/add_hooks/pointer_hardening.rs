@@ -47,6 +47,7 @@ fn remove_dup_addresses(func_ptr_addresses: &mut Vec<u32>) {
 fn get_func_ptr_addresses(module: &mut Module) -> Vec<u32> {
     let mut func_ptr_addresses = vec![];
 
+    // NOTE: does this end up now looking at functions 1->n, when it should be 1->(n-1)?
     for (func_idx, func) in module.clone().functions() {
         let real_func_idx = func_idx.to_usize() + 1;
         let mut func_instrs_rev_iter = func.instrs().iter().rev().peekmore();
@@ -65,8 +66,14 @@ fn get_func_ptr_addresses(module: &mut Module) -> Vec<u32> {
                 }
             }
 
+            // TODO: should we just look for the first i32.load before call_indirect, then
+            // the first i32.const and use that value as the pointer adresses, e.g., 1040?
+
+            // Looks for an i32.const followed by i32.load as our call_indirect pattern.
+            // Some of our examples produce different code now that would break this.
             match func_instrs_rev_iter.peek() {
                 Some(Load(I32Load, mem_arg)) => {
+                    // New loop here to just go until we find an i32.const?
                     if let Some(Const(I32(i32))) = func_instrs_rev_iter.peek_next() {
                         func_ptr_addresses.push(*i32 as u32 + mem_arg.offset);
                         func_instrs_rev_iter.next();
