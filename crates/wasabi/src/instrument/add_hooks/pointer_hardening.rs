@@ -58,18 +58,25 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     }
                 }
 
-                // Make this a lop like below since there are instances where the i32.load
-                // isn't always just before the call_indirect.
-                // TODO: we need to come up with a way to handle when there are multiple i32.const
-                // before the i32.load.
                 let func_ptr_addr;
-                if let Some(Load(I32Load, mem_arg)) = func_instrs_rev_iter.peek() {
-                    func_ptr_addr = mem_arg.offset;
-                } else {
-                    println!("[Pointer Hardening] Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
-                    continue;
+                loop {
+                    match func_instrs_rev_iter.peek() {
+                        Some(Load(I32Load, mem_arg)) => {
+                            func_ptr_addr = mem_arg.offset;
+                            break;
+                        }
+                        None => {
+                            println!("[Pointer Hardening] Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
+                            break 'l_next_func;
+                        }
+                        _ => {
+                            func_instrs_rev_iter.advance_cursor();
+                        }
+                    }
                 }
 
+                // TODO: we need to come up with a way to handle when there are multiple i32.const
+                // before the i32.load.
                 loop {
                     func_instrs_rev_iter.advance_cursor();
                     match func_instrs_rev_iter.peek() {
