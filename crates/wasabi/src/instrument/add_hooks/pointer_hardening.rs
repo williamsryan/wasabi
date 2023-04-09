@@ -68,7 +68,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                             break;
                         }
                         None => {
-                            println!("[Pointer Hardening] Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
+                            println!("[Pointer Hardening]<i32.load_pattern_failure> Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
                             break 'l_next_func;
                         }
                         _ => {
@@ -92,7 +92,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                             break;
                         }
                         None => {
-                            println!("[Pointer Hardening] Could not find the address of a function pointer in function #{func_idx:?} !");
+                            println!("[Pointer Hardening]<address_lookup_error> Could not find the address of a function pointer in function #{func_idx:?} !");
                             break 'l_next_func;
                         }
                         _ => {}
