@@ -28,6 +28,7 @@ use self::hook_map::HookMap;
 use self::pointer_hardening::harden_module;
 use self::static_info::*;
 use self::type_stack::TypeStack;
+use self::write_protection::write_protect_range;
 
 pub mod block_stack;
 mod convert_i64;
@@ -36,6 +37,7 @@ mod hook_map;
 mod pointer_hardening;
 mod static_info;
 pub mod type_stack;
+mod write_protection;
 
 /// Instruments every instruction in Jalangi-style with a callback that takes inputs, outputs, and
 /// other relevant information.

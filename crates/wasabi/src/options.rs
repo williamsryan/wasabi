@@ -97,6 +97,7 @@ pub enum Hook {
 
     Load,
     Store,
+    WriteProtection,
 
     MemorySize,
     MemoryGrow,
