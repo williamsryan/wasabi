@@ -195,4 +195,5 @@ fn encrypt_func_ptrs_in_memory(memories: &mut [Memory], func_ptr_addresses: &Vec
             panic!("[Pointer Hardening] Failed to encrypt the function pointer at the address {func_ptr_addr:#010X}, aborting !");
         }
     }
+    println!("[Pointer Hardening] Encrypted {0} function pointer{1} !", func_ptr_addresses.len(), if func_ptr_addresses.len() == 1 { "" } else { "s" });
 }
