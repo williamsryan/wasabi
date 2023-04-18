@@ -33,7 +33,7 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
                     let func_type = store_op.to_type();
                     let stack_size = func_type.inputs().len();
                     if stack_size != 2 {
-                        println!("[Write Protection] Encountered a 'store' instruction with {stack_size} value(s) on the stack, skipping !");
+                        println!("[Write Protection] Encountered a 'store' instruction with {stack_size} value{0} on the stack, skipping !", if stack_size == 1 { "" } else { "s" });
                         continue;
                     }
                     let store_addr_type = func_type.inputs()[0];
@@ -128,13 +128,14 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
                         module_code.body[instr_idx] = Call(validate_write_func_idx);
                         patched_store_instrs += 1;
                     } else {
-                        let num_instr_idx = instr_idx + 1;
-                        let num_func_idx = func_idx.to_usize();
-                        println!("[Write Protection] Failed to patch instruction #{num_instr_idx} in function #{num_func_idx:?} !");
+                        println!("[Write Protection] Failed to patch instruction #{0} in function #{1} !", instr_idx + 1, func_idx.to_usize());
                     }
                 }
             }
         }
     }
-    println!("[Write Protection] Patched {patched_store_instrs} 'store' instructions !");
+    println!(
+        "[Write Protection] Patched {patched_store_instrs} 'store' instruction{0} !",
+        if patched_store_instrs == 1 { "" } else { "s" }
+    );
 }
