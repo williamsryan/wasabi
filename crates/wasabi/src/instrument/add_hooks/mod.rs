@@ -783,6 +783,13 @@ pub fn add_hooks(
         harden_module(module);
     }
 
+    // Test the write protection here.
+    if enabled_hooks.contains(Hook::WriteProtection) {
+        let start_add = 0;
+        let end_add = 100;
+        write_protect_range(module, start_add, end_add);
+    }
+
     // actually add the hooks to module and check that inserted Idx is the one on the Hook struct
     let hooks = hooks.finish();
     let hook_count = hooks.len();
@@ -827,18 +834,21 @@ impl ToConst for Label {
 impl BlockStackElement {
     fn append_end_hook_args(&self, append_to: &mut Vec<Instr>, fidx: Idx<Function>) {
         match self {
-            BlockStackElement::Function { end } => append_to.extend_from_slice(&[
-                fidx.to_const(), 
-                end.to_const()
-            ]),
+            BlockStackElement::Function { end } => {
+                append_to.extend_from_slice(&[fidx.to_const(), end.to_const()])
+            }
             BlockStackElement::Block { begin, end }
             | BlockStackElement::Loop { begin, end }
-            | BlockStackElement::If { begin_if: begin, end, .. } => append_to.extend_from_slice(&[
-                fidx.to_const(),
-                end.to_const(),
-                begin.to_const()
-            ]),
-            BlockStackElement::Else { begin_else, begin_if, end } => append_to.extend_from_slice(&[
+            | BlockStackElement::If {
+                begin_if: begin,
+                end,
+                ..
+            } => append_to.extend_from_slice(&[fidx.to_const(), end.to_const(), begin.to_const()]),
+            BlockStackElement::Else {
+                begin_else,
+                begin_if,
+                end,
+            } => append_to.extend_from_slice(&[
                 fidx.to_const(),
                 end.to_const(),
                 begin_else.to_const(),
@@ -866,7 +876,8 @@ fn generate_js(module_info: ModuleInfo, hooks: &[String], node_js: bool) -> Stri
 *   - generated from program-to-instrument: static information and low-level hooks
 */
 
-"#.to_string();
+"#
+    .to_string();
 
     if node_js {
         // For Node.js, write the long.js dependency to a separate file (in main) and
@@ -881,10 +892,12 @@ fn generate_js(module_info: ModuleInfo, hooks: &[String], node_js: bool) -> Stri
         //    - needs to be run after every instrumentation
         // * Alternative B: compile Wasabi itself to WebAssembly, instrument at runtime
         result.push_str("// long.js\n");
-        result.push_str(include_str!("../../../js/long.js/long.js")
-            .lines()
-            .next()
-            .expect("could not include long.js dependency"));
+        result.push_str(
+            include_str!("../../../js/long.js/long.js")
+                .lines()
+                .next()
+                .expect("could not include long.js dependency"),
+        );
     }
     result.push_str("\n\n");
 
