@@ -35,24 +35,24 @@ fn main() -> Result<(), MainError> {
 
     let input_filename = opt.input_file.file_name().ok_or_else(|| io_err("invalid input file, has no filename"))?;
     let output_file_wasm = opt.output_dir.join(input_filename);
-    let output_file_wasabi_js = output_file_wasm.with_extension("wasabi.js");
+    // let output_file_wasabi_js = output_file_wasm.with_extension("wasabi.js");
 
     // instrument Wasm and generate JavaScript
     let (mut module, _offsets, _warnings) = Module::from_file(opt.input_file)?;
     if module.metadata.used_extensions().next().is_some() {
         return Err(io_err("input file uses Wasm extensions, which are not supported yet by Wasabi").into());
     }
-    let (js, hook_count) = add_hooks(&mut module, enabled_hooks, opt.node_js).unwrap();
+    let (_js, hook_count) = add_hooks(&mut module, enabled_hooks, opt.node_js).unwrap();
     println!("inserted {hook_count} low-level hooks");
 
     // write output files
     fs::create_dir_all(&opt.output_dir)?;
     module.to_file(output_file_wasm)?;
-    fs::write(output_file_wasabi_js, js)?;
-    if opt.node_js {
-        let output_file_long_js = opt.output_dir.join("long.js");
-        fs::write(output_file_long_js, include_str!("../js/long.js/long.js"))?;
-    }
+    // fs::write(output_file_wasabi_js, js)?;
+    // if opt.node_js {
+    //     let output_file_long_js = opt.output_dir.join("long.js");
+    //     fs::write(output_file_long_js, include_str!("../js/long.js/long.js"))?;
+    // }
 
     Ok(())
 }

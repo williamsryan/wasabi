@@ -785,8 +785,8 @@ pub fn add_hooks(
 
     // Test the write protection here.
     if enabled_hooks.contains(Hook::WriteProtection) {
-        let start_add = 0;
-        let end_add = 100;
+        let start_add = 0x404;
+        let end_add = 0xFFFF;
         write_protect_range(module, start_add, end_add);
     }
 

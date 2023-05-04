@@ -25,6 +25,8 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
         "start_address ({start_address:#010X}) < end_address ({end_address:#010X})"
     );
 
+    // println!("start_address ({start_address:#010X}) < end_address ({end_address:#010X})");
+
     let mut patched_store_instrs = 0;
     for (func_idx, func) in module.clone().functions() {
         if let Some(func_code) = func.code() {
