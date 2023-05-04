@@ -12,10 +12,10 @@ use clap::Parser;
 #[command(author, version, about, long_about = None)]
 pub struct Options {
     /// WebAssembly binary to instrument
-    #[arg(short, long)]
+    #[arg()]
     pub input_file: PathBuf,
 
-    /// Generate JavaScript code for inclusion in Node.js, not the browser.
+    /// Generate JavaScript code for inclusion in Node.js, not the browser
     #[arg(short = 'n', long = "node")]
     pub node_js: bool,
 
