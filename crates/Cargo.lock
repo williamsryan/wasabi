@@ -1279,8 +1279,6 @@ dependencies = [
  "serde_json",
  "serde_plain",
  "smallvec",
- "structopt",
- "wasabi",
  "wasabi_wasm",
 ]
 
