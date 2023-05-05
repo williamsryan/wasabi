@@ -1,5 +1,5 @@
 [package]
-name = "scwasm_dev"
+name = "wassy"
 version = "0.1.0"
 authors = ["Ryan Williams <williams.ry@northeastern.edu>", "Mike Lappas <lappas.m@northeastern.edu>"]
 edition = "2021"

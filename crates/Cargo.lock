@@ -1265,24 +1265,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
-name = "scwasm_dev"
-version = "0.1.0"
-dependencies = [
- "clap 4.2.7",
- "enumset",
- "main_error",
- "nohash-hasher",
- "parking_lot",
- "peekmore",
- "rayon",
- "serde",
- "serde_json",
- "serde_plain",
- "smallvec",
- "wasabi_wasm",
-]
-
-[[package]]
 name = "serde"
 version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1730,6 +1712,24 @@ checksum = "adde01ade41ab9a5d10ec8ed0bb954238cf8625b5cd5a13093d6de2ad9c2be1a"
 dependencies = [
  "indexmap",
  "url",
+]
+
+[[package]]
+name = "wassy"
+version = "0.1.0"
+dependencies = [
+ "clap 4.2.7",
+ "enumset",
+ "main_error",
+ "nohash-hasher",
+ "parking_lot",
+ "peekmore",
+ "rayon",
+ "serde",
+ "serde_json",
+ "serde_plain",
+ "smallvec",
+ "wasabi_wasm",
 ]
 
 [[package]]

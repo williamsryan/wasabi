@@ -6,9 +6,9 @@ use wasabi_wasm::Module;
 
 use clap::Parser;
 
-use scwasm_dev::add_hooks::add_hooks;
-use scwasm_dev::options::HookSet;
-use scwasm_dev::options::Options;
+use wassy::instrument::add_hooks;
+use wassy::options::HookSet;
+use wassy::options::Options;
 
 fn main() -> Result<(), MainError> {
     // TODO: use clap as our CLI since we're moving away from Wasabi.

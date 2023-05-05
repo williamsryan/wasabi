@@ -3,7 +3,7 @@ members = [
     "wasabi",
     "wasabi_wasm",
     "test_utilities",
-    "scwasm_dev",
+    "wassy",
 ]
 
 [profile.release]
