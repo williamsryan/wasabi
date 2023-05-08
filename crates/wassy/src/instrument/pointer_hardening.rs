@@ -31,7 +31,8 @@ fn remove_dup_addresses(func_ptr_addresses: &mut Vec<u32>) {
 }
 
 fn insert_xor_instrs(idx: usize, code: &mut Code, canary: u32) {
-    code.body.insert(idx, Const(wasabi_wasm::Val::I32(canary as i32)));
+    code.body
+        .insert(idx, Const(wasabi_wasm::Val::I32(canary as i32)));
     code.body.insert(idx + 1, Binary(I32Xor));
 }
 
@@ -82,6 +83,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     match func_instrs_rev_iter.peek() {
                         Some(Const(I32(i32))) => {
                             let func_ptr_addr = *i32 as u32 + func_ptr_addr;
+                            println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
                             if !is_func_ptr_addr_in_memory(&module.memories, func_ptr_addr) {
                                 continue;
                             }
@@ -129,10 +131,10 @@ fn is_func_ptr_addr_in_memory(memories: &[Memory], func_ptr_addr: u32) -> bool {
 
                 let data_section_start = i32 as u32;
                 let data_section_end = data_section_start + (data_section_clone.bytes.len() as u32);
+                // println!("[Pointer Hardening] Func ptr in memory? : {data_section_start} --> {data_section_end}");
                 if func_ptr_addr < data_section_start || func_ptr_addr > data_section_end {
                     continue;
                 }
-
                 return true;
             }
         }
@@ -140,7 +142,11 @@ fn is_func_ptr_addr_in_memory(memories: &[Memory], func_ptr_addr: u32) -> bool {
     false
 }
 
-fn encrypt_func_ptrs_in_memory(memories: &mut [Memory], func_ptr_addresses: &Vec<u32>, canary: u32) {
+fn encrypt_func_ptrs_in_memory(
+    memories: &mut [Memory],
+    func_ptr_addresses: &Vec<u32>,
+    canary: u32,
+) {
     for func_ptr_addr in func_ptr_addresses {
         let mut found_func_ptr = false;
 
@@ -157,7 +163,8 @@ fn encrypt_func_ptrs_in_memory(memories: &mut [Memory], func_ptr_addresses: &Vec
                     let func_ptr_size = 4;
                     let data_section_len = data_section_clone.bytes.len();
                     let data_section_start = i32 as u32;
-                    let data_section_end = (data_section_start + data_section_len as u32) - func_ptr_size as u32;
+                    let data_section_end =
+                        (data_section_start + data_section_len as u32) - func_ptr_size as u32;
                     // Continue if the function pointer is not in this data section
                     if *func_ptr_addr < data_section_start || *func_ptr_addr > data_section_end {
                         continue;
@@ -175,14 +182,17 @@ fn encrypt_func_ptrs_in_memory(memories: &mut [Memory], func_ptr_addresses: &Vec
                     // Web Assembly uses little-endian byte ordering
                     let encrypted_func_ptr = (func_ptr ^ canary).to_le_bytes();
                     // Overwrite the function pointer with its encrypted variant
-                    data_section_clone.bytes[func_ptr_start..func_ptr_end].copy_from_slice(&encrypted_func_ptr);
+                    data_section_clone.bytes[func_ptr_start..func_ptr_end]
+                        .copy_from_slice(&encrypted_func_ptr);
 
                     /*
                      * Restore the data section to its original length if the function pointer being modified is not
                      * at the end of the data section.
                      */
                     if *func_ptr_addr != data_section_end {
-                        data_section_clone.bytes.truncate(data_section_len - bytes_appended);
+                        data_section_clone
+                            .bytes
+                            .truncate(data_section_len - bytes_appended);
                     }
 
                     *data_section = data_section_clone;
@@ -195,5 +205,13 @@ fn encrypt_func_ptrs_in_memory(memories: &mut [Memory], func_ptr_addresses: &Vec
             panic!("[Pointer Hardening] Failed to encrypt the function pointer at the address {func_ptr_addr:#010X}, aborting !");
         }
     }
-    println!("[Pointer Hardening] Encrypted {0} function pointer{1} !", func_ptr_addresses.len(), if func_ptr_addresses.len() == 1 { "" } else { "s" });
+    println!(
+        "[Pointer Hardening] Encrypted {0} function pointer{1} !",
+        func_ptr_addresses.len(),
+        if func_ptr_addresses.len() == 1 {
+            ""
+        } else {
+            "s"
+        }
+    );
 }
