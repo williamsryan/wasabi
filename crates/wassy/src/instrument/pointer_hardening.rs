@@ -83,7 +83,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     match func_instrs_rev_iter.peek() {
                         Some(Const(I32(i32))) => {
                             let func_ptr_addr = *i32 as u32 + func_ptr_addr;
-                            // println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
+                            println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
                             if !is_func_ptr_addr_in_memory(&module.memories, func_ptr_addr) {
                                 println!("[Pointer Hardening] Could not find function pointer address ({func_ptr_addr}) in memory");
                                 continue;
@@ -132,7 +132,7 @@ fn is_func_ptr_addr_in_memory(memories: &[Memory], func_ptr_addr: u32) -> bool {
 
                 let data_section_start = i32 as u32;
                 let data_section_end = data_section_start + (data_section_clone.bytes.len() as u32);
-                // println!("[Pointer Hardening] Func ptr in memory? : {data_section_start} --> {data_section_end}");
+                println!("[Pointer Hardening] Func ptr addr ({func_ptr_addr}) in memory range : {data_section_start} --> {data_section_end} ?");
                 if func_ptr_addr < data_section_start || func_ptr_addr > data_section_end {
                     continue;
                 }
