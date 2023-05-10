@@ -66,10 +66,11 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     match func_instrs_rev_iter.peek() {
                         Some(Load(I32Load, mem_arg)) => {
                             func_ptr_addr = mem_arg.offset;
+                            println!("[Pointer Hardening] Testing offset: {func_ptr_addr} into data segment");
                             break;
                         }
                         None => {
-                            println!("[Pointer Hardening]<i32.load_pattern_failure> Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?} !");
+                            println!("[Pointer Hardening]<i32.load_pattern_failure> Could not find an 'i32.load' instruction before a 'call_indirect' instruction in function #{func_idx:?}!");
                             break 'l_next_func;
                         }
                         _ => {
@@ -95,7 +96,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                             break;
                         }
                         None => {
-                            println!("[Pointer Hardening]<address_lookup_error> Could not find the address of a function pointer in function #{func_idx:?} !");
+                            println!("[Pointer Hardening]<address_lookup_error> Could not find the address of a function pointer in function #{func_idx:?}!");
                             break 'l_next_func;
                         }
                         _ => {}
@@ -131,6 +132,7 @@ fn is_func_ptr_addr_in_memory(memories: &[Memory], func_ptr_addr: u32) -> bool {
                 round_up_data_section_4_bytes(&mut data_section_clone);
 
                 let data_section_start = i32 as u32;
+                println!("[Pointer Hardening] Found data section @ {data_section_start}");
                 let data_section_end = data_section_start + (data_section_clone.bytes.len() as u32);
                 println!("[Pointer Hardening] Func ptr addr ({func_ptr_addr}) in memory range : {data_section_start} --> {data_section_end} ?");
                 if func_ptr_addr < data_section_start || func_ptr_addr > data_section_end {
@@ -203,11 +205,11 @@ fn encrypt_func_ptrs_in_memory(
             }
         }
         if !found_func_ptr {
-            panic!("[Pointer Hardening] Failed to encrypt the function pointer at the address {func_ptr_addr:#010X}, aborting !");
+            panic!("[Pointer Hardening] Failed to encrypt the function pointer at the address {func_ptr_addr:#010X}, aborting!");
         }
     }
     println!(
-        "[Pointer Hardening] Encrypted {0} function pointer{1} !",
+        "[Pointer Hardening] Encrypted {0} function pointer{1}!",
         func_ptr_addresses.len(),
         if func_ptr_addresses.len() == 1 {
             ""
