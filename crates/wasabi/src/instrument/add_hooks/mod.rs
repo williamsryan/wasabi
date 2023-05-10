@@ -39,6 +39,9 @@ mod static_info;
 pub mod type_stack;
 mod write_protection;
 
+const WRITE_PROTECTION_START_ADDRESS: u32 = 0x404;
+const WRITE_PROTECTION_END_ADDRESS: u32 = 0xFFFF;
+
 /// Instruments every instruction in Jalangi-style with a callback that takes inputs, outputs, and
 /// other relevant information.
 #[allow(clippy::cognitive_complexity)]
@@ -785,9 +788,11 @@ pub fn add_hooks(
 
     // Test the write protection here.
     if enabled_hooks.contains(Hook::WriteProtection) {
-        let start_add = 0x404;
-        let end_add = 0xFFFF;
-        write_protect_range(module, start_add, end_add);
+        write_protect_range(
+            module,
+            WRITE_PROTECTION_START_ADDRESS,
+            WRITE_PROTECTION_END_ADDRESS,
+        );
     }
 
     // actually add the hooks to module and check that inserted Idx is the one on the Hook struct
