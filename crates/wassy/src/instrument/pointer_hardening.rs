@@ -136,7 +136,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                             // TODO: fix actual issue later.
                             // Just catch negative values that caused overflow.
                             if *i32 < 0 {
-                                continue;
+                                break;
                             }
                             let const_val = *i32 as u32;
                             let func_ptr_addr = const_val + func_ptr_addr;
@@ -147,7 +147,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                                 let func_ptr_addr =
                                     func_ptr_via_stack(stack_ptr_idx, func_ptr_addr);
                                 println!("[Pointer Hardening] Guessed function pointer address: {func_ptr_addr}");
-                                continue;
+                                break;
                             }
 
                             func_ptr_addresses.push(func_ptr_addr);
