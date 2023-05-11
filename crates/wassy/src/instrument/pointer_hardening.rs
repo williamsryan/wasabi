@@ -4,6 +4,7 @@ use std::time::*;
 
 use wasabi_wasm::BinaryOp::I32Xor;
 use wasabi_wasm::Data;
+use wasabi_wasm::ImportOrPresent::Present;
 use wasabi_wasm::LoadOp::I32Load;
 use wasabi_wasm::Memory;
 use wasabi_wasm::Module;
@@ -36,8 +37,58 @@ fn insert_xor_instrs(idx: usize, code: &mut Code, canary: u32) {
     code.body.insert(idx + 1, Binary(I32Xor));
 }
 
+// Just testing something for now - RPW.
+fn find_stack_ptr(module: &Module) -> u32 {
+    // Is stack pointer always first global?
+    // How often does this end up being 65536?
+    let test = module
+        .globals()
+        .nth(0)
+        .expect("[Pointer Hardening] Could not find stack pointer")
+        .1;
+
+    let mut ptr_base = 0;
+
+    match &test.init {
+        x => {
+            match &x {
+                Present(y) => {
+                    match &y[0] {
+                        Const(I32(i32)) => {
+                            ptr_base = *i32 as u32;
+                            // println!("Stack pointer: {:?}", i32);
+                        }
+                        _ => {
+                            println!("TODO");
+                        }
+                    }
+                }
+                _ => {
+                    println!("TODO");
+                }
+            }
+        }
+    }
+    return ptr_base;
+}
+
+// Test function to try getting function pointer via
+// the stack pointer base + offset (obviously won't
+// always work, but let's test).
+fn func_ptr_via_stack(stack: u32, offset: u32) -> u32 {
+    let diff_offset = stack + offset;
+    println!(
+        "[Pointer Hardening] Checking if function pointer is at: {:?}",
+        diff_offset
+    );
+    return diff_offset;
+}
+
 fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
     let mut func_ptr_addresses = vec![];
+
+    let stack_ptr_idx = find_stack_ptr(module); // Looks like this is always 65536 in our tests.
+    // println!("[Debug] Using stack pointer: {:?}", stack_ptr_idx);
 
     for (func_idx, func) in module.clone().functions() {
         if let Some(func_code_mut) = module.functions[func_idx.to_usize()].code_mut() {
@@ -66,7 +117,6 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     match func_instrs_rev_iter.peek() {
                         Some(Load(I32Load, mem_arg)) => {
                             func_ptr_addr = mem_arg.offset;
-                            println!("[Pointer Hardening] Testing offset: {func_ptr_addr} into data segment");
                             break;
                         }
                         None => {
@@ -83,10 +133,20 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     func_instrs_rev_iter.advance_cursor();
                     match func_instrs_rev_iter.peek() {
                         Some(Const(I32(i32))) => {
-                            let func_ptr_addr = *i32 as u32 + func_ptr_addr;
-                            println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
+                            // TODO: fix actual issue later.
+                            // Just catch negative values that caused overflow.
+                            if *i32 < 0 {
+                                continue;
+                            }
+                            let const_val = *i32 as u32;
+                            let func_ptr_addr = const_val + func_ptr_addr;
+                            // println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
                             if !is_func_ptr_addr_in_memory(&module.memories, func_ptr_addr) {
-                                println!("[Pointer Hardening] Could not find function pointer address ({func_ptr_addr}) in memory");
+                                println!("[Pointer Hardening] Could not find function pointer address ({func_ptr_addr}) in memory; checking other methods...");
+                                // Try using base ptr + offset instead?
+                                let func_ptr_addr =
+                                    func_ptr_via_stack(stack_ptr_idx, func_ptr_addr);
+                                println!("[Pointer Hardening] Guessed function pointer address: {func_ptr_addr}");
                                 continue;
                             }
 
