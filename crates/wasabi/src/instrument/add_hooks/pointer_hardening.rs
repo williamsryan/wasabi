@@ -81,9 +81,13 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                     func_instrs_rev_iter.advance_cursor();
                     match func_instrs_rev_iter.peek() {
                         Some(Const(I32(i32))) => {
+                            if *i32 < 0 {
+                                break;
+                            }
+
                             let func_ptr_addr = *i32 as u32 + func_ptr_addr;
                             if !is_func_ptr_addr_in_memory(&module.memories, func_ptr_addr) {
-                                continue;
+                                break;
                             }
 
                             func_ptr_addresses.push(func_ptr_addr);
