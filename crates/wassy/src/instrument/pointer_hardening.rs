@@ -49,6 +49,10 @@ fn find_stack_ptr(module: &Module) -> u32 {
 
     let mut ptr_base = 0;
 
+    // if let Some(i32) = module.globals().nth(0) {
+    //     println!("[DEBUG] i32: {:?}", i32);
+    // }
+
     match &test.init {
         x => {
             match &x {
@@ -193,7 +197,7 @@ fn is_func_ptr_addr_in_memory(memories: &[Memory], func_ptr_addr: u32) -> bool {
                 round_up_data_section_4_bytes(&mut data_section_clone);
 
                 let data_section_start = i32 as u32;
-                println!("[Pointer Hardening] Found data section @ {data_section_start}");
+                // println!("[Pointer Hardening] Found data section @ {data_section_start}");
                 let data_section_end = data_section_start + (data_section_clone.bytes.len() as u32);
                 println!("[Pointer Hardening] Func ptr addr ({func_ptr_addr}) in memory range : {data_section_start} --> {data_section_end} ?");
                 if func_ptr_addr < data_section_start || func_ptr_addr > data_section_end {
