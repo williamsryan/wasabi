@@ -88,7 +88,7 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
     let mut func_ptr_addresses = vec![];
 
     let stack_ptr_idx = find_stack_ptr(module); // Looks like this is always 65536 in our tests.
-    // println!("[Debug] Using stack pointer: {:?}", stack_ptr_idx);
+                                                // println!("[Debug] Using stack pointer: {:?}", stack_ptr_idx);
 
     for (func_idx, func) in module.clone().functions() {
         if let Some(func_code_mut) = module.functions[func_idx.to_usize()].code_mut() {
@@ -139,17 +139,18 @@ fn find_and_crypt_func_ptrs(module: &mut Module, canary: u32) -> Vec<u32> {
                                 break;
                             }
                             let const_val = *i32 as u32;
-                            let func_ptr_addr = const_val + func_ptr_addr;
+                            let mut func_ptr_addr = const_val + func_ptr_addr;
                             // println!("[Pointer Hardening] Found function pointer address: {func_ptr_addr}");
                             if !is_func_ptr_addr_in_memory(&module.memories, func_ptr_addr) {
                                 println!("[Pointer Hardening] Could not find function pointer address ({func_ptr_addr}) in memory; checking other methods...");
                                 // Try using base ptr + offset instead?
-                                let func_ptr_addr =
-                                    func_ptr_via_stack(stack_ptr_idx, func_ptr_addr);
-                                println!("[Pointer Hardening] Guessed function pointer address: {func_ptr_addr}");
-                                break;
+                                func_ptr_addr = func_ptr_via_stack(stack_ptr_idx, func_ptr_addr);
+                                // break;
                             }
 
+                            println!(
+                                "[Pointer Hardening] Function pointer address: {func_ptr_addr}"
+                            );
                             func_ptr_addresses.push(func_ptr_addr);
                             func_instrs_rev_iter.next();
                             insert_xor_instrs(call_indirect_instr_idx, func_code_mut, canary);
