@@ -29,6 +29,12 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
 
     let mut patched_store_instrs = 0;
     for (func_idx, func) in module.clone().functions() {
+        if let Some(start_func_idx) = module.start {
+            if func_idx == start_func_idx {
+                continue;
+            }
+        }
+
         if let Some(func_code) = func.code() {
             for (instr_idx, instr) in func_code.body.clone().into_iter().enumerate() {
                 if let Store(store_op, _) = instr {
