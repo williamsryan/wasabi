@@ -19,7 +19,8 @@ struct ValidateWritePatch {
 
 static VALIDATE_WRITE_PATCHES: Vec<ValidateWritePatch> = Vec::new();
 
-pub fn write_protect_range(module: &mut Module, start_address: u32, end_address: u32) {
+pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32) {
+    let end_address = start_address + length;
     assert!(
         start_address < end_address,
         "start_address ({start_address:#010X}) < end_address ({end_address:#010X})"

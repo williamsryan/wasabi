@@ -41,6 +41,7 @@ mod write_protection;
 
 const WRITE_PROTECTION_START_ADDRESS: u32 = 0x404;
 const WRITE_PROTECTION_END_ADDRESS: u32 = 0xFFFF;
+const WRITE_PROTECTION_LENGTH: u32 = WRITE_PROTECTION_END_ADDRESS - WRITE_PROTECTION_START_ADDRESS;
 
 /// Instruments every instruction in Jalangi-style with a callback that takes inputs, outputs, and
 /// other relevant information.
@@ -791,7 +792,7 @@ pub fn add_hooks(
         write_protect_range(
             module,
             WRITE_PROTECTION_START_ADDRESS,
-            WRITE_PROTECTION_END_ADDRESS,
+            WRITE_PROTECTION_LENGTH,
         );
     }
 
