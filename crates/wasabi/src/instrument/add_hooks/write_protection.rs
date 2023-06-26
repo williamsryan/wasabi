@@ -17,10 +17,7 @@ struct ValidateWritePatch {
     func_idx: Idx<Function>,
 }
 
-static VALIDATE_WRITE_PATCHES: Vec<ValidateWritePatch> = Vec::new();
-
-pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32) {
-    let end_address = start_address + length;
+pub fn write_protect_range(module: &mut Module, start_address: u32, end_address: u32) {
     assert!(
         start_address < end_address,
         "start_address ({start_address:#010X}) < end_address ({end_address:#010X})"
@@ -28,6 +25,7 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32)
 
     // println!("start_address ({start_address:#010X}) < end_address ({end_address:#010X})");
 
+    let mut validate_write_patches: Vec<ValidateWritePatch> = vec![];
     let mut patched_store_instrs = 0;
     for (func_idx, func) in module.clone().functions() {
         if let Some(start_func_idx) = module.start {
@@ -71,7 +69,7 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32)
                     };
 
                     // Check if we have already inserted a patch that corresponds to this instruction
-                    let validate_write_patch = VALIDATE_WRITE_PATCHES
+                    let validate_write_patch = validate_write_patches
                         .iter()
                         .find(|validate_write_patch| validate_write_patch.original_instr == instr);
 
@@ -85,8 +83,7 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32)
                                 I64Store | F64Store => 7,
                             };
 
-                            // Mike: Can this function be better optimised ?
-                            module.add_function(
+                            let new_func_idx = module.add_function(
                                 FunctionType::new(&[store_addr_type, store_val_type], &[]),
                                 vec![
                                     I32, // Temporary variable
@@ -117,10 +114,17 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, length: u32)
                                     End,
                                     Local(LocalOp::Get, Idx::from(0u32)),
                                     Local(LocalOp::Get, Idx::from(1u32)),
-                                    instr,
+                                    instr.clone(),
                                     End,
                                 ],
-                            )
+                            );
+
+                            validate_write_patches.push(ValidateWritePatch {
+                                original_instr: instr,
+                                func_idx: new_func_idx,
+                            });
+
+                            new_func_idx
                         }
                     };
 
