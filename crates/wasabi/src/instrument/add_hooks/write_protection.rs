@@ -28,22 +28,19 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
     let mut validate_write_patches: Vec<ValidateWritePatch> = vec![];
     let mut patched_store_instrs = 0;
     for (func_idx, func) in module.clone().functions() {
+        if let Some(start_func_idx) = module.start {
+            if func_idx == start_func_idx {
+                continue;
+            }
+        }
+
         if let Some(func_code) = func.code() {
             for (instr_idx, instr) in func_code.body.clone().into_iter().enumerate() {
                 if let Store(store_op, _) = instr {
                     let func_type = store_op.to_type();
-                    let stack_size = func_type.inputs().len();
-                    if stack_size != 2 {
-                        println!("[Write Protection] Encountered a 'store' instruction with {stack_size} value{0} on the stack, skipping !", if stack_size == 1 { "" } else { "s" });
-                        continue;
-                    }
                     let store_addr_type = func_type.inputs()[0];
                     let store_val_type = func_type.inputs()[1];
 
-                    if store_addr_type != I32 {
-                        println!("[Write Protection] Encountered a 'store' instruction where the address is of type '{store_addr_type}', skipping !");
-                        continue;
-                    }
                     match store_op {
                         I32Store8 | I32Store16 | I32Store => {
                             if store_val_type != I32 {
