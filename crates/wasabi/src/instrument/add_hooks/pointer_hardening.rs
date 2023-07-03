@@ -21,7 +21,7 @@ struct CallIndirectPatch {
     new_func_idx: Idx<Function>,
 }
 
-const CALL_INDIRECT_READ_ONLY_TBL_ADDR: u32 = 0x00000010;
+const CALL_INDIRECT_READ_ONLY_TBL_ADDR: u32 = 0x00001000; // Just trying a large value for now to test if it works.
 const FUNC_PTR_SIZE: u32 = 0x00000004;
 
 pub fn harden_module(module: &mut Module) {
