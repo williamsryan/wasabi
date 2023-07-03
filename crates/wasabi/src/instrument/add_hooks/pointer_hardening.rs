@@ -1,3 +1,5 @@
+use super::write_protection::write_protect_range;
+
 use wasabi_wasm::BinaryOp::I32Eq;
 use wasabi_wasm::Function;
 use wasabi_wasm::FunctionType;
@@ -13,144 +15,184 @@ use wasabi_wasm::StoreOp;
 use wasabi_wasm::Val;
 use wasabi_wasm::ValType;
 
-use super::write_protection::write_protect_range;
-
-struct CallIndirectInstrLoc {
+struct CallIndirectPatch {
     func_idx: Idx<Function>,
     instr_idx: usize,
+    new_func_idx: Idx<Function>,
 }
 
 const CALL_INDIRECT_READ_ONLY_TBL_ADDR: u32 = 0x00000010;
+const FUNC_PTR_SIZE: u32 = 0x00000004;
 
 pub fn harden_module(module: &mut Module) {
-    let call_indirect_instr_locs = patch_call_indirect_instrs(module);
-    let num_patched_call_indirect_instrs = call_indirect_instr_locs.len();
+    let call_indirect_patches = get_call_indirect_patches(module);
+    let num_call_indirect_patches = call_indirect_patches.len();
 
-    println!("[Pointer Hardening] Patching {num_patched_call_indirect_instrs} 'call_indirect' instruction{0} !",
-    if num_patched_call_indirect_instrs == 1 { "" } else { "s" } );
-    if num_patched_call_indirect_instrs == 0 {
+    println!(
+        "[Pointer Hardening] Patching {num_call_indirect_patches} 'call_indirect' instruction{0} !",
+        if num_call_indirect_patches == 1 {
+            ""
+        } else {
+            "s"
+        }
+    );
+    if num_call_indirect_patches == 0 {
         return;
     }
-    let get_func_ptrs_funcs_idxs =
-        add_get_func_ptrs_funcs_to_module(module, &call_indirect_instr_locs);
+    let get_func_ptrs_funcs_idxs = do_call_indirect_patches(module, &call_indirect_patches);
 
-    init_start_func(module, get_func_ptrs_funcs_idxs);
+    init_start_func(module, &get_func_ptrs_funcs_idxs);
     write_protect_range(
         module,
         CALL_INDIRECT_READ_ONLY_TBL_ADDR,
-        CALL_INDIRECT_READ_ONLY_TBL_ADDR + (call_indirect_instr_locs.len() as u32 * 4),
+        CALL_INDIRECT_READ_ONLY_TBL_ADDR + (call_indirect_patches.len() as u32 * FUNC_PTR_SIZE),
     );
 }
 
-fn patch_call_indirect_instrs(module: &mut Module) -> Vec<CallIndirectInstrLoc> {
-    let mut call_indirect_instr_locs: Vec<CallIndirectInstrLoc> = vec![];
+fn get_call_indirect_patches(module: &mut Module) -> Vec<CallIndirectPatch> {
+    let mut call_indirect_patches: Vec<CallIndirectPatch> = vec![];
 
-    for (func_idx, func) in module.clone().functions_mut() {
+    for (func_idx, func) in module.clone().functions() {
+        // Do not attempt to deduce function pointers that are within functions that accept arguments
         if func.param_count() != 0 {
             continue;
         }
 
-        if let Some(func_code) = func.code_mut() {
-            for (instr_idx, instr) in func_code.clone().body.iter().enumerate() {
+        if let Some(code) = func.code() {
+            for (instr_idx, instr) in code.body.iter().enumerate() {
                 if let CallIndirect(func_type, _table_idx) = instr {
-                    if !func_type.inputs().is_empty() {
-                        break;
+                    let locals = &[
+                        func_type.inputs(),
+                        // Added
+                        &[ValType::I32],
+                    ]
+                    .concat();
+                    let func_ptr_local_idx = locals.len() - 1;
+
+                    let mut body = vec![
+                        Block(GoedelNumber {
+                            inputs: 0,
+                            results: 0,
+                        }),
+                        // Load the precomputed function pointer
+                        Local(LocalOp::Get, Idx::from(func_ptr_local_idx)),
+                        Const(Val::I32(
+                            CALL_INDIRECT_READ_ONLY_TBL_ADDR as i32
+                                + (call_indirect_patches.len() as i32 * FUNC_PTR_SIZE as i32),
+                        )),
+                        Load(
+                            LoadOp::I32Load,
+                            Memarg {
+                                alignment_exp: 2,
+                                offset: 0,
+                            },
+                        ),
+                        // Check if the function pointer has changed
+                        Binary(I32Eq),
+                        // Branch if the function pointer has not changed
+                        BrIf(Label::from(0u32)),
+                        // If the function pointer has changed
+                        // Panic
+                        Unreachable,
+                        End,
+                    ];
+                    // If the function pointer has not changed
+                    // Load the arguments
+                    for i in 0..locals.len() {
+                        body.push(Local(LocalOp::Get, Idx::from(i)));
                     }
+                    // Call the function pointer
+                    body.push(instr.clone());
+                    body.push(End);
 
-                    let call_instr = Call(module.add_function(
-                        FunctionType::new(&[ValType::I32], &[ValType::I32]),
-                        vec![
-                            ValType::I32, // Parameter
-                        ],
-                        // Check if the function pointer has been modified
-                        vec![
-                            Block(GoedelNumber {
-                                inputs: 0,
-                                results: 0,
-                            }),
-                            Local(LocalOp::Get, Idx::from(0u32)),
-                            Const(Val::I32(
-                                CALL_INDIRECT_READ_ONLY_TBL_ADDR as i32
-                                    + (call_indirect_instr_locs.len() as i32 * 4),
-                            )),
-                            Load(
-                                LoadOp::I32Load,
-                                Memarg {
-                                    alignment_exp: 2,
-                                    offset: 0,
-                                },
-                            ),
-                            Binary(I32Eq),
-                            BrIf(Label::from(0u32)),
-                            Unreachable,
-                            End,
-                            Local(LocalOp::Get, Idx::from(0u32)),
-                            instr.clone(),
-                            End,
-                        ],
-                        /*
-                        // Use the function pointer that was deduced
-                        vec![
-                            Const(Val::I32(
-                                CALL_INDIRECT_READ_ONLY_TBL_ADDR as i32
-                                    + (call_indirect_instr_locs.len() as i32 * 4),
-                            )),
-                            Load(
-                                LoadOp::I32Load,
-                                Memarg {
-                                    alignment_exp: 2,
-                                    offset: 0,
-                                },
-                            ),
-                            instr.clone(),
-                            End,
-                        ],
-                        */
-                    ));
-
-                    call_indirect_instr_locs.push(CallIndirectInstrLoc {
+                    call_indirect_patches.push(CallIndirectPatch {
                         func_idx,
                         instr_idx,
+                        new_func_idx: module.add_function(
+                            FunctionType::new(locals, func_type.results()),
+                            vec![],
+                            body,
+                        ),
                     });
-
-                    if let Some(func_code) = module.function_mut(func_idx).code_mut() {
-                        func_code.body[instr_idx] = call_instr;
-                    } else {
-                        println!("[Pointer Hardening] Failed to patch instruction #{0} in function #{1} !", instr_idx + 1, func_idx.to_usize());
-                    }
                 }
             }
+        } else {
+            println!(
+                "[Pointer Hardening] Failed to parse function #{0} !",
+                func_idx.to_usize()
+            );
         }
     }
 
-    call_indirect_instr_locs
+    call_indirect_patches
 }
 
-fn add_get_func_ptrs_funcs_to_module(
+fn do_call_indirect_patches(
     module: &mut Module,
-    call_indirect_instr_locs: &[CallIndirectInstrLoc],
+    call_indirect_patches: &[CallIndirectPatch],
 ) -> Vec<Idx<Function>> {
     let mut get_func_ptrs_funcs_idxs: Vec<Idx<Function>> = vec![];
 
-    for call_indirect_instr_loc in call_indirect_instr_locs.iter() {
-        let func = module.function_mut(call_indirect_instr_loc.func_idx);
+    for (i, call_indirect_patch) in call_indirect_patches.iter().enumerate() {
+        let func = module.function_mut(call_indirect_patch.func_idx);
+        let mut locals: Vec<ValType> = func.locals().map(|(_, local)| local.type_).collect();
+        // Added
+        locals.push(ValType::I32);
+        let func_ptr_local_idx = locals.len() - 1;
 
-        if let Some(func_code) = func.code() {
-            let new_func = &mut func_code.body[0..call_indirect_instr_loc.instr_idx].to_vec();
+        if let Some(code) = func.code_mut() {
+            // Instructions used to compute the function pointer
+            let new_func = &mut code.body[0..call_indirect_patch.instr_idx].to_vec();
+            // Save the function pointer
+            new_func.push(Local(LocalOp::Set, Idx::from(func_ptr_local_idx)));
+            // Load the address that the function pointer will be stored at
+            new_func.push(Const(Val::I32(
+                CALL_INDIRECT_READ_ONLY_TBL_ADDR as i32 + (i as i32 * FUNC_PTR_SIZE as i32),
+            )));
+            // Load the function pointer
+            new_func.push(Local(LocalOp::Get, Idx::from(func_ptr_local_idx)));
+            // Store the function pointer
+            new_func.push(Store(
+                StoreOp::I32Store,
+                Memarg {
+                    alignment_exp: 2,
+                    offset: 0,
+                },
+            ));
+            // Get rid of the excess values that are on the stack before returning from the function
+            match code.body[call_indirect_patch.instr_idx] {
+                CallIndirect(func_type, _tbl_idx) => {
+                    for _ in 0..func_type.inputs().len() {
+                        new_func.push(Drop);
+                    }
+                }
+                _ => {
+                    panic!("[Pointer Hardening] Instruction #{0} of function #{1} is not a 'call_indirect' instruction !",
+                           call_indirect_patch.instr_idx + 1, call_indirect_patch.func_idx.to_usize());
+                }
+            }
             new_func.push(End);
 
+            // Patch the original instruction
+            code.body[call_indirect_patch.instr_idx] = Call(call_indirect_patch.new_func_idx);
+
             get_func_ptrs_funcs_idxs.push(module.add_function(
-                FunctionType::new(&[], &[ValType::I32]),
-                vec![],
+                FunctionType::new(&[], &[]),
+                locals,
                 new_func.to_vec(),
             ));
+        } else {
+            panic!(
+                "[Pointer Hardening] Failed to parse function #{0} !",
+                call_indirect_patch.func_idx.to_usize()
+            );
         }
     }
 
     get_func_ptrs_funcs_idxs
 }
 
-fn init_start_func(module: &mut Module, get_func_ptrs_funcs_idxs: Vec<Idx<Function>>) {
+fn init_start_func(module: &mut Module, get_func_ptrs_funcs_idxs: &Vec<Idx<Function>>) {
     let mut start_func_body = vec![];
 
     // If the module already has a 'start' function defined
@@ -158,27 +200,10 @@ fn init_start_func(module: &mut Module, get_func_ptrs_funcs_idxs: Vec<Idx<Functi
         // Call the original 'start' function first
         start_func_body.push(Call(start_func_idx));
     }
-    // Store the function pointers in read-only memory
-    for (i, get_func_ptrs_funcs_idx) in get_func_ptrs_funcs_idxs.into_iter().enumerate() {
-        start_func_body.push(Call(get_func_ptrs_funcs_idx));
-        start_func_body.push(Local(LocalOp::Set, Idx::from(0u32)));
-        start_func_body.push(Const(Val::I32(
-            CALL_INDIRECT_READ_ONLY_TBL_ADDR as i32 + (i as i32 * 4),
-        )));
-        start_func_body.push(Local(LocalOp::Get, Idx::from(0u32)));
-        start_func_body.push(Store(
-            StoreOp::I32Store,
-            Memarg {
-                alignment_exp: 2,
-                offset: 0,
-            },
-        ));
+    for get_func_ptrs_funcs_idx in get_func_ptrs_funcs_idxs {
+        start_func_body.push(Call(*get_func_ptrs_funcs_idx));
     }
     start_func_body.push(End);
 
-    module.start = Some(module.add_function(
-        FunctionType::new(&[], &[]),
-        vec![ValType::I32], // Temporary
-        start_func_body,
-    ));
+    module.start = Some(module.add_function(FunctionType::new(&[], &[]), vec![], start_func_body));
 }
