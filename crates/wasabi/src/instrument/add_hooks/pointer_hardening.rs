@@ -28,6 +28,11 @@ pub fn harden_module(module: &mut Module) {
     let call_indirect_patches = get_call_indirect_patches(module);
     let num_call_indirect_patches = call_indirect_patches.len();
 
+    // Dummy test.
+    for seg in module.clone().memories() {
+        println!("memory segment test: {:?}", seg);
+    }
+
     println!(
         "[Pointer Hardening] Patching {num_call_indirect_patches} 'call_indirect' instruction{0} !",
         if num_call_indirect_patches == 1 {
