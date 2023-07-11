@@ -125,8 +125,8 @@ fn get_call_indirect_patches(module: &mut Module) -> Vec<CallIndirectPatch> {
             }
         } else {
             println!(
-                "[Pointer Hardening] Failed to parse function #{0} !",
-                func_idx.to_usize()
+                "[Pointer Hardening] Failed to parse function #{0}! (.code() returned: {1:?})",
+                func_idx.to_usize(), func.code()
             );
         }
     }
