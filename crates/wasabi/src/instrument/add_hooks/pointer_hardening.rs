@@ -47,6 +47,8 @@ pub fn harden_module(module: &mut Module) {
     let get_func_ptrs_funcs_idxs = do_call_indirect_patches(module, &call_indirect_patches);
 
     init_start_func(module, &get_func_ptrs_funcs_idxs);
+    // TODO: test this with and without the write-protection.
+    // Determine overhead incurred for this individual pass.
     write_protect_range(
         module,
         CALL_INDIRECT_READ_ONLY_TBL_ADDR,
