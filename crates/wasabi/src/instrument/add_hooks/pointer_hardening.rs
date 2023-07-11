@@ -58,7 +58,7 @@ fn get_call_indirect_patches(module: &mut Module) -> Vec<CallIndirectPatch> {
     let mut call_indirect_patches: Vec<CallIndirectPatch> = vec![];
 
     for (func_idx, func) in module.clone().functions() {
-        // Do not attempt to deduce function pointers that are within functions that accept arguments
+        // Do not attempt to deduce function pointers that are within functions that accept arguments.
         if func.param_count() != 0 {
             continue;
         }
