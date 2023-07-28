@@ -69,33 +69,6 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
                     let store_addr_type = func_type.inputs()[0];
                     let store_val_type = func_type.inputs()[1];
 
-                    match store_op {
-                        I32Store8 | I32Store16 | I32Store => {
-                            if store_val_type != I32 {
-                                println!("[Write Protection] Encountered a 'i32.store' instruction where the value being stored is of type '{store_val_type}', skipping !");
-                                continue;
-                            }
-                        }
-                        I64Store8 | I64Store16 | I64Store32 | I64Store => {
-                            if store_val_type != I64 {
-                                println!("[Write Protection] Encountered a 'i64.store' instruction where the value being stored is of type '{store_val_type}', skipping !");
-                                continue;
-                            }
-                        }
-                        F32Store => {
-                            if store_val_type != F32 {
-                                println!("[Write Protection] Encountered a 'f32.store' instruction where the value being stored is of type '{store_val_type}', skipping !");
-                                continue;
-                            }
-                        }
-                        F64Store => {
-                            if store_val_type != F64 {
-                                println!("[Write Protection] Encountered a 'f64.store' instruction where the value being stored is of type '{store_val_type}', skipping !");
-                                continue;
-                            }
-                        }
-                    };
-
                     // Check if we have already inserted a patch that corresponds to this instruction
                     let validate_write_patch = validate_write_patches
                         .iter()
@@ -116,7 +89,6 @@ pub fn write_protect_range(module: &mut Module, start_address: u32, end_address:
                                 vec![
                                     I32, // Temporary variable
                                 ],
-                                // Check if the address being written to is in the range that we are protecting
                                 vec![
                                     Block(GoedelNumber {
                                         inputs: 0,
