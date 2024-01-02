@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "wasabi",
     "wasabi_wasm",
     "test_utilities",
     "wassy",

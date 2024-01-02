@@ -23,7 +23,7 @@ pub struct Options {
     #[arg(short = 'o', long = "output-dir", default_value = "./out/")]
     pub output_dir: PathBuf,
 
-    /// Hardening instrumentation to apply
+    /// Instrumentations to apply
     #[arg(long = "hooks", num_args(0..))]
     pub hooks: Vec<Hook>,
 }
@@ -62,6 +62,8 @@ pub enum Hook {
     Load,
     Store,
     WriteProtection,
+    // Just a test for logging the memory access.
+    StoreUsage,
 
     MemorySize,
     MemoryGrow,
