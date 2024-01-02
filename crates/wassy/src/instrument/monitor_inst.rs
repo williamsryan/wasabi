@@ -29,6 +29,13 @@ pub fn monitor_test(module: &mut Module) {
                     let store_addr_type = func_type.inputs()[0];
                     let store_val_type = func_type.inputs()[1];
 
+                    println!("store_addr_type: {:?}", store_addr_type);
+                    println!("store_val_type: {:?}", store_val_type);
+                    println!("store_op: {:?}", store_op);
+                    println!("stack_size: {:?}", stack_size);
+                    println!("func_type: {:?}", func_type);
+                    println!("instr: {:?}", instr);
+
                     if store_addr_type != I32 {
                         println!("[Instruction Monitor] Encountered a 'store' instruction where the address is of type '{store_addr_type}', skipping !");
                         continue;
