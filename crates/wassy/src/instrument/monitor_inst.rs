@@ -1,17 +1,15 @@
-use wasabi_wasm::BinaryOp::*;
-use wasabi_wasm::Function;
-use wasabi_wasm::FunctionType;
-use wasabi_wasm::FunctionType::GoedelNumber;
-use wasabi_wasm::Idx;
-use wasabi_wasm::Instr;
-use wasabi_wasm::Instr::*;
-use wasabi_wasm::Label;
-use wasabi_wasm::LocalOp;
-use wasabi_wasm::StoreOp::*;
+use wasabi_wasm::Data;
+use wasabi_wasm::ImportOrPresent::Present;
+use wasabi_wasm::LoadOp::I32Load;
+use wasabi_wasm::Memory;
+use wasabi_wasm::Module;
 use wasabi_wasm::Val;
-use wasabi_wasm::ValType::*;
-use wasabi_wasm::{MemoryOp, Module};
+use wasabi_wasm::Val::I32;
+use wasabi_wasm::{Code, Instr::*};
 
-pub fn dummy_log() {
-    println!("dummy log");
+pub fn monitor_test(module: &mut Module) {
+    for (func_idx, func) in module.clone().functions() {
+        println!("func_idx: {:?}", func_idx);
+        println!("func: {:?}", func);
+    }
 }

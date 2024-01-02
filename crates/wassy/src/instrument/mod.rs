@@ -28,7 +28,7 @@ use self::pointer_hardening::harden_module;
 use self::static_info::*;
 use self::type_stack::TypeStack;
 use self::write_protection::write_protect_range;
-use self::monitor_inst::dummy_log;
+use self::monitor_inst::monitor_test;
 
 pub mod block_stack;
 mod convert_i64;
@@ -782,7 +782,7 @@ pub fn add_hooks(module: &mut Module, enabled_hooks: HookSet) -> Option<usize> {
 
     // Testing logging store usage here.
     if enabled_hooks.contains(Hook::StoreUsage) {
-        dummy_log();
+        monitor_test(module);
     }
 
     // Test the write protection here.
