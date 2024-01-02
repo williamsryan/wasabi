@@ -59,6 +59,7 @@ pub fn harden_module(module: &mut Module) {
 fn get_call_indirect_patches(module: &mut Module) -> Vec<CallIndirectPatch> {
     let mut call_indirect_patches: Vec<CallIndirectPatch> = vec![];
 
+    // NOTE: does this end up now looking at functions 1->n, when it should be 1->(n-1)?
     for (func_idx, func) in module.clone().functions() {
         // Do not attempt to deduce function pointers that are within functions that accept arguments.
         if func.param_count() != 0 {
