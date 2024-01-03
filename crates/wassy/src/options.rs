@@ -19,7 +19,7 @@ pub struct Options {
     #[arg(short = 'n', long = "node")]
     pub node_js: bool,
 
-    /// Output directory (created if it dows not exist)
+    /// Output directory (created if it does not exist)
     #[arg(short = 'o', long = "output-dir", default_value = "./out/")]
     pub output_dir: PathBuf,
 
