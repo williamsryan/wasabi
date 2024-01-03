@@ -20,16 +20,19 @@ pub fn monitor_test(module: &mut Module) {
         if let Some(instrs) = func.instrs_mut() {
             let mut new_instrs = Vec::new();
 
-            for instr in instrs.iter().cloned() {
+            for (instr_idx, instr) in instrs.iter().cloned().enumerate() {
                 if let Store(store_op, _) = instr {
                     match store_op {
                         StoreOp::I32Store
                         | StoreOp::I64Store
                         | StoreOp::F32Store
                         | StoreOp::F64Store => {
-                            new_instrs.push(Call(logging_func_idx)); // Print the value on stack.
+                            // Push the function index, instruction index, and value to be stored onto the stack.
+                            new_instrs.push(Const(Val::I32(func_idx.to_u32() as i32)));
+                            new_instrs.push(Const(Val::I32(instr_idx as i32)));
                             new_instrs.push(Local(LocalOp::Get, Idx::from(0u32)));
-                            // Continue normal execution.
+                            // Call the logging function.
+                            new_instrs.push(Call(logging_func_idx));
                         }
                         _ => {}
                     }
@@ -54,7 +57,7 @@ fn add_logging_function(module: &mut Module) -> Idx<Function> {
         Local(LocalOp::Get, Idx::from(0u32)), // Get the function index
         Local(LocalOp::Get, Idx::from(1u32)), // Get the instruction index
         Local(LocalOp::Get, Idx::from(2u32)), // Get the value to be stored
-        Call(Idx::from(0u32)), // Call the host function
+        Call(Idx::from(0u32)),                // Call the host function
         End,
     ];
 
