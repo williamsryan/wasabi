@@ -9,6 +9,7 @@ use wasabi_wasm::Label;
 use wasabi_wasm::LocalOp;
 use wasabi_wasm::StoreOp::*;
 use wasabi_wasm::Val;
+use wasabi_wasm::ValType;
 use wasabi_wasm::ValType::*;
 use wasabi_wasm::{MemoryOp, Module};
 
@@ -29,12 +30,22 @@ pub fn monitor_test(module: &mut Module) {
                     let store_addr_type = func_type.inputs()[0];
                     let store_val_type = func_type.inputs()[1];
 
-                    println!("store_addr_type: {:?}", store_addr_type);
-                    println!("store_val_type: {:?}", store_val_type);
-                    println!("store_op: {:?}", store_op);
-                    println!("stack_size: {:?}", stack_size);
-                    println!("func_type: {:?}", func_type);
-                    println!("instr: {:?}", instr);
+                    // Debugging stuff.
+                    // println!("store_addr_type: {:?}", store_addr_type);
+                    // println!("store_val_type: {:?}", store_val_type);
+                    // println!("store_op: {:?}", store_op);
+                    // println!("stack_size: {:?}", stack_size);
+                    // println!("func_type: {:?}", func_type);
+                    // println!("instr: {:?}", instr);
+
+                    // Insert a 'tee_local' instruction to duplicate the value being stored.
+                    let tee_instr = Local(LocalOp::Tee, Idx::from(2u32));
+                    // func_code.body.insert(instr_idx, tee_instr);
+
+                    // Insert a call to a host function that prints the value being stored.
+                    let print_func_idx = add_print_function(module);
+                    let call_instr = Instr::Call(print_func_idx);
+                    // func_code.body.insert(instr_idx + 1, call_instr);
 
                     if store_addr_type != I32 {
                         println!("[Instruction Monitor] Encountered a 'store' instruction where the address is of type '{store_addr_type}', skipping !");
@@ -71,4 +82,24 @@ pub fn monitor_test(module: &mut Module) {
             }
         }
     }
+}
+
+
+fn add_print_function(module: &mut Module) -> Idx<Function> {
+    // Define the type of the print function.
+    let print_func_type = FunctionType::new(&vec![ValType::I32], &[]);
+
+    // Define the body of the print function
+    // This is a placeholder, replace it with the actual instructions
+    let print_func_body = vec![
+        Local(LocalOp::Get, Idx::from(0u32)),
+        Call(Idx::from(0u32)), // Call the host function
+        End,
+    ];
+
+    // Add the function to the module
+    let print_func_idx = module.add_function(print_func_type, vec![I32], print_func_body);
+
+    // Return the index of the print function.
+    print_func_idx
 }

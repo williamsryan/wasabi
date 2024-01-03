@@ -13,3 +13,6 @@ target/
 # Wasabi outputs, test outputs.
 out/
 /test-outputs/
+
+*.wasm
+*.wat
