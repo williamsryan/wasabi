@@ -1,6 +1,6 @@
-use wasmer::{imports, Function, Instance, Memory, Module, Store, Value};
-use wasmer_compiler_cranelift::Cranelift;
-use wasmer_engine_jit::JIT;
+use wasmer::{imports, Function, Instance, Module, Store};
+// use wasmer_compiler_cranelift::Cranelift;
+// use wasmer_engine_jit::JIT;
 
 fn host_print(i: i32) {
     println!("{}", i);
