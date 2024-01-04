@@ -1,17 +1,13 @@
-use wasabi_wasm::BinaryOp::*;
 use wasabi_wasm::Function;
 use wasabi_wasm::FunctionType;
-use wasabi_wasm::FunctionType::GoedelNumber;
 use wasabi_wasm::Idx;
-use wasabi_wasm::Instr;
 use wasabi_wasm::Instr::*;
-use wasabi_wasm::Label;
 use wasabi_wasm::LocalOp;
+use wasabi_wasm::Module;
 use wasabi_wasm::StoreOp;
 use wasabi_wasm::Val;
 use wasabi_wasm::ValType;
 use wasabi_wasm::ValType::*;
-use wasabi_wasm::{MemoryOp, Module};
 
 pub fn monitor_test(module: &mut Module) {
     let logging_func_idx = add_logging_function(module);
@@ -49,7 +45,10 @@ pub fn monitor_test(module: &mut Module) {
 fn add_logging_function(module: &mut Module) -> Idx<Function> {
     // println!("[Instruction Monitor] Adding a print function to the module.");
     // Define the type of the print function.
-    let log_func_type = FunctionType::new(&vec![ValType::I32, ValType::I32, ValType::I32], &vec![ValType::I32]);
+    let log_func_type = FunctionType::new(
+        &vec![ValType::I32, ValType::I32, ValType::I32],
+        &vec![ValType::I32],
+    );
 
     // Define the body of the logging function.
     let log_func_body = vec![
