@@ -10,6 +10,8 @@ use wassy::instrument::add_hooks;
 use wassy::options::HookSet;
 use wassy::options::Options;
 
+use wassy::runtime::create_runtime;
+
 fn main() -> Result<(), MainError> {
     // TODO: use clap as our CLI since we're moving away from Wasabi.
     let args = Options::parse();
@@ -51,6 +53,9 @@ fn main() -> Result<(), MainError> {
     // write output files
     fs::create_dir_all(&args.output_dir)?;
     module.to_file(output_file_wasm)?;
+
+    // TODO: use runtime from wasmer to provide host functions.
+
 
     Ok(())
 }
