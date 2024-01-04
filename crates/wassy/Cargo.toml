@@ -26,4 +26,5 @@ enumset = "1.0.12"
 main_error = "0.1.2"
 peekmore = "1.2.0"
 clap = { version = "4.2.7", features = ["derive"] }
+wasmer = "4.2.5"
 
