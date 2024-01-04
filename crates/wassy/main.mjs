@@ -7,7 +7,7 @@ import * as fs from 'fs';
 const importObj = { env: { print: console.log } };
 
 const MAX_SIZE = 30;
-const wasmBuffer = fs.readFileSync('buff.wasm');
+const wasmBuffer = fs.readFileSync('./out/buff.wasm');
 WebAssembly.instantiate(wasmBuffer, importObj).then(wasmObj => {
     const { memory, setX, foo, bar, baz, getRand, modInit, bwam } = wasmObj.instance.exports;
 

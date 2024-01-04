@@ -26,7 +26,6 @@ pub fn monitor_test(module: &mut Module) {
                             // Push the function index, instruction index, and value to be stored onto the stack.
                             new_instrs.push(Const(Val::I32(func_idx.to_u32() as i32)));
                             new_instrs.push(Const(Val::I32(instr_idx as i32)));
-                            new_instrs.push(Local(LocalOp::Get, Idx::from(0u32)));
                             // Call the logging function.
                             new_instrs.push(Call(logging_func_idx));
                         }
@@ -46,28 +45,32 @@ fn add_logging_function(module: &mut Module) -> Idx<Function> {
     // println!("[Instruction Monitor] Adding a print function to the module.");
     // Define the type of the print function.
     let log_func_type = FunctionType::new(
-        &vec![ValType::I32, ValType::I32, ValType::I32],
-        &vec![ValType::I32],
+        &vec![ValType::I32, ValType::I32, ValType::I32, ValType::I32],
+        &vec![ValType::I32, ValType::I32],
     );
 
     // Define the body of the logging function.
     let log_func_body = vec![
         // Log the function index
         Local(LocalOp::Get, Idx::from(0u32)), // Get the function index
-        Call(Idx::from(0u32)),                // Call the host function
+        Call(Idx::from(0u32)),
         // Log the instruction index
         Local(LocalOp::Get, Idx::from(1u32)), // Get the instruction index
-        Call(Idx::from(0u32)),                // Call the host function
-        // Log the value to be stored
+        Call(Idx::from(0u32)),
+        // Log the value details
         Local(LocalOp::Get, Idx::from(2u32)), // Get the value to be stored
-        Call(Idx::from(0u32)),                // Call the host function
-        // Local(LocalOp::Get, Idx::from(2u32)),
+        Call(Idx::from(0u32)),
+        Local(LocalOp::Get, Idx::from(3u32)), // Get the location to store the value
+        Call(Idx::from(0u32)),
+        // Return initial two values to pass back to store
+        Local(LocalOp::Get, Idx::from(3u32)), // Push location to stack
+        Local(LocalOp::Get, Idx::from(2u32)), // Push value to stack
         End,
     ];
 
     // Add the function to the module
-    let log_func_idx = module.add_function(log_func_type, vec![I32, I32, I32], log_func_body);
+    let log_func_idx = module.add_function(log_func_type, vec![I32, I32, I32, I32], log_func_body);
 
-    // Return the index of the logging function.
+    // Return the index of the logging function
     log_func_idx
 }
