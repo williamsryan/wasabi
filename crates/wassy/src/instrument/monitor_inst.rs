@@ -49,15 +49,20 @@ pub fn monitor_test(module: &mut Module) {
 fn add_logging_function(module: &mut Module) -> Idx<Function> {
     // println!("[Instruction Monitor] Adding a print function to the module.");
     // Define the type of the print function.
-    let log_func_type = FunctionType::new(&vec![ValType::I32, ValType::I32, ValType::I32], &[]);
+    let log_func_type = FunctionType::new(&vec![ValType::I32, ValType::I32, ValType::I32], &vec![ValType::I32]);
 
-    // Define the body of the logging function
-    // This is a placeholder, replace it with the actual instructions
+    // Define the body of the logging function.
     let log_func_body = vec![
+        // Log the function index
         Local(LocalOp::Get, Idx::from(0u32)), // Get the function index
+        Call(Idx::from(0u32)),                // Call the host function
+        // Log the instruction index
         Local(LocalOp::Get, Idx::from(1u32)), // Get the instruction index
+        Call(Idx::from(0u32)),                // Call the host function
+        // Log the value to be stored
         Local(LocalOp::Get, Idx::from(2u32)), // Get the value to be stored
         Call(Idx::from(0u32)),                // Call the host function
+        // Local(LocalOp::Get, Idx::from(2u32)),
         End,
     ];
 
