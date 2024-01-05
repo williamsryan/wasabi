@@ -1,30 +1,33 @@
-use wasmer::{imports, Function, Instance, Module, Store};
+use wasmer::{imports, Function, FunctionType, Instance, Module, Store, Type, Value};
 // use wasmer_compiler_cranelift::Cranelift;
 // use wasmer_engine_jit::JIT;
+use std::path::Path;
 
-fn host_print(i: i32) {
-    println!("{}", i);
-}
+// fn host_print(i: i32) {
+//     println!("{}", i);
+// }
 
-pub fn create_runtime() -> Result<Instance, Box<dyn std::error::Error>> {
-    let module_wat = r#"
-    (module
-    (type $t0 (func (param i32) (result i32)))
-    (func $add_one (export "add_one") (type $t0) (param $p0 i32) (result i32)
-        get_local $p0
-        i32.const 1
-        i32.add))
-    "#;
+pub fn create_runtime(wasm_bin: &Path) -> Result<Instance, Box<dyn std::error::Error>> {
+    println!("[+] Creating runtime from module: {:?}", wasm_bin.display());
     let mut store = Store::default();
-    let module = Module::new(&store, &module_wat)?;
+    let module = Module::from_file(&store, &wasm_bin)?;
+
+    let host_print_sig = FunctionType::new(vec![Type::I32], vec![Type::I32]);
+    let host_print_func = Function::new(&mut store, &host_print_sig, |args| {
+        println!("[+] Calling host print function");
+
+        let result = args[0].unwrap_i32();
+
+        Ok(vec![Value::I32(result)])
+    });
 
     let import_obj = imports! {
         "env" => {
-            "host_print" => Function::new_typed(&mut store, host_print),
+            "host_print" => host_print_func,
         },
     };
 
-    let instance = Instance::new(&mut store, &module, &import_obj).unwrap();
+    let instance = Instance::new(&mut store, &module, &import_obj)?;
 
     Ok(instance)
 }

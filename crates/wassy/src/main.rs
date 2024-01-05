@@ -31,7 +31,7 @@ fn main() -> Result<(), MainError> {
     //     enabled_hooks.remove(hook);
     // }
 
-    let input_filename = args
+    let input_filename = &args
         .input_file
         .file_name()
         .ok_or_else(|| io_err("invalid input file, has no filename"))?;
@@ -39,7 +39,7 @@ fn main() -> Result<(), MainError> {
     // let output_file_wasabi_js = output_file_wasm.with_extension("wasabi.js");
 
     // instrument Wasm and generate JavaScript
-    let (mut module, _offsets, _warnings) = Module::from_file(args.input_file)?;
+    let (mut module, _offsets, _warnings) = Module::from_file(&args.input_file)?;
     if module.metadata.used_extensions().next().is_some() {
         return Err(io_err(
             "input file uses Wasm extensions, which are not supported yet by Wasabi",
@@ -55,12 +55,12 @@ fn main() -> Result<(), MainError> {
     module.to_file(output_file_wasm)?;
 
     // TODO: use runtime from wasmer to provide host functions.
-
+    let _test = create_runtime(&args.input_file)?;
 
     Ok(())
 }
 
-// TODO remove after proper error handling
+// TODO remove after proper error handling.
 fn io_err(str: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidInput, str.to_string())
 }
