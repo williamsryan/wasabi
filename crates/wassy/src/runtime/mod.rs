@@ -12,20 +12,24 @@ pub fn create_runtime(wasm_bin: &Path) -> Result<Instance, Box<dyn std::error::E
     let mut store = Store::default();
     let module = Module::from_file(&store, &wasm_bin)?;
 
-    let host_print_sig = FunctionType::new(vec![Type::I32], vec![Type::I32]);
+    let host_print_sig = FunctionType::new(vec![Type::I32], vec![]);
     let host_print_func = Function::new(&mut store, &host_print_sig, |args| {
-        println!("[+] Calling host print function");
-
         let result = args[0].unwrap_i32();
+        println!("{}", result);
 
-        Ok(vec![Value::I32(result)])
+        // Ok(vec![Value::I32(result)])
+        Ok(vec![])
     });
+
+    println!("[+] Creating imports");
 
     let import_obj = imports! {
         "env" => {
-            "host_print" => host_print_func,
+            "print" => host_print_func,
         },
     };
+
+    println!("[+] Instantiating module");
 
     let instance = Instance::new(&mut store, &module, &import_obj)?;
 
